@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>一人用〇×ゲーム</title>
+
+<style>
+body{
+    font-family: Arial, sans-serif;
+    text-align:center;
+    background:#f0f8ff;
+}
+
+h1{
+    margin-top:20px;
+}
+
+#status{
+    font-size:24px;
+    margin:20px;
+}
+
+.board{
+    width:306px;
+    margin:auto;
+    display:grid;
+    grid-template-columns:repeat(3,100px);
+    grid-template-rows:repeat(3,100px);
+    gap:3px;
+}
+
+.cell{
+    width:100px;
+    height:100px;
+    background:white;
+    border:2px solid #333;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    font-size:60px;
+    cursor:pointer;
+}
+
+.cell:hover{
+    background:#e8f4ff;
+}
+
+button{
+    margin-top:20px;
+    padding:10px 20px;
+    font-size:18px;
+}
+</style>
+
+</head>
+
+<body>
+
+<h1>一人用〇×ゲーム</h1>
+
+<div id="status">あなた（〇）の番です</div>
+
+<div class="board" id="board"></div>
+
+<button onclick="resetGame()">リセット</button>
+
+<script>
+
+const board = document.getElementById("board");
+const status = document.getElementById("status");
+
+let cells = [];
+let gameOver = false;
+
+const human = "〇";
+const ai = "×";
+
+const winPatterns = [
+    [0,1,2],[3,4,5],[6,7,8],
+    [0,3,6],[1,4,7],[2,5,8],
+    [0,4,8],[2,4,6]
+];
+
+// マス作成
+for(let i=0;i<9;i++){
+    const cell=document.createElement("div");
+    cell.className="cell";
+    cell.dataset.index=i;
+    cell.addEventListener("click",playerMove);
+    board.appendChild(cell);
+    cells.push(cell);
+}
+
+function playerMove(){
+
+    if(gameOver) return;
+    if(this.textContent!="") return;
+
+    this.textContent=human;
+
+    if(checkWinner(human)){
+        status.textContent="あなたの勝ち！";
+        gameOver=true;
+        return;
+    }
+
+    if(isDraw()){
+        status.textContent="引き分け！";
+        gameOver=true;
+        return;
+    }
+
+    status.textContent="CPUが考えています...";
+
+    setTimeout(()=>{
+        bestMove();
+
+        if(checkWinner(ai)){
+            status.textContent="CPUの勝ち！";
+            gameOver=true;
+            return;
+        }
+
+        if(isDraw()){
+            status.textContent="引き分け！";
+            gameOver=true;
+            return;
+        }
+
+        status.textContent="あなた（〇）の番です";
+    },300);
+}
+
+function bestMove(){
+
+    let bestScore=-Infinity;
+    let move=-1;
+
+    for(let i=0;i<9;i++){
+
+        if(cells[i].textContent==""){
+
+            cells[i].textContent=ai;
+
+            let score=minimax(false);
+
+            cells[i].textContent="";
+
+            if(score>bestScore){
+                bestScore=score;
+                move=i;
+            }
+        }
+    }
+
+    cells[move].textContent=ai;
+}
+
+function minimax(isMax){
+
+    if(checkWinner(ai)) return 1;
+    if(checkWinner(human)) return -1;
+    if(isDraw()) return 0;
+
+    if(isMax){
+
+        let best=-Infinity;
+
+        for(let i=0;i<9;i++){
+
+            if(cells[i].textContent==""){
+
+                cells[i].textContent=ai;
+
+                best=Math.max(best,minimax(false));
+
+                cells[i].textContent="";
+            }
+        }
+
+        return best;
+    }
+    else{
+
+        let best=Infinity;
+
+        for(let i=0;i<9;i++){
+
+            if(cells[i].textContent==""){
+
+                cells[i].textContent=human;
+
+                best=Math.min(best,minimax(true));
+
+                cells[i].textContent="";
+            }
+        }
+
+        return best;
+    }
+}
+
+function checkWinner(player){
+
+    return winPatterns.some(pattern =>
+        pattern.every(index => cells[index].textContent===player)
+    );
+
+}
+
+function isDraw(){
+
+    return cells.every(cell => cell.textContent!="");
+
+}
+
+function resetGame(){
+
+    gameOver=false;
+
+    cells.forEach(cell=>{
+        cell.textContent="";
+    });
+
+    status.textContent="あなた（〇）の番です";
+}
+
+</script>
+
+</body>
+</html>
